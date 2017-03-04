@@ -4,6 +4,17 @@
   <meta charset="UTF-8">
   <title>JS Drum Kit</title>
   <link rel="stylesheet" href="style.css">
+
+  <style type="text/css">
+    .controls {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+  </style>
 </head>
 <body>
 
@@ -47,6 +58,12 @@
     </div>
   </div>
 
+  <div class="controls">
+    <progress value="1" max="15"></progress>
+    <button type="button">Play</button>
+    <button type="button">Record</button>
+  </div>
+
   <audio data-key="65" src="sounds/clap.wav"></audio>
   <audio data-key="83" src="sounds/hihat.wav"></audio>
   <audio data-key="68" src="sounds/kick.wav"></audio>
@@ -58,6 +75,10 @@
   <audio data-key="76" src="sounds/tink.wav"></audio>
 
 <script>
+  let record = [];
+  let reproductionTime = 850;
+  let recordingActive = false;
+
   function playSound(e) {
     const audio = document.querySelector(`audio[data-key="${e.keyCode}"]`);
     const key = document.querySelector(`.key[data-key="${e.keyCode}"]`);
@@ -68,6 +89,14 @@
     audio.play();
 
     key.classList.add('playing');
+
+    if( recordingActive ) {
+      if( record.length === 15 ) { 
+        recordingActive = false;
+        return; 
+      }
+      record.push( e.keyCode );
+    }
   }
 
 
@@ -81,6 +110,44 @@
 
   keys.forEach(key =>  key.addEventListener('transitionend', removeTransition));
   window.addEventListener('keydown', playSound);
+
+  document.addEventListener('DOMContentLoaded', function(e) {
+    let progress = document.querySelector('.controls progress');
+
+    // Play
+    document.querySelector('.controls button:nth-child(2)').addEventListener('click',function(e) {
+      const elements = record.map(keyCode => {
+          const audio = document.querySelector(`audio[data-key="${keyCode}"]`);
+          const key = document.querySelector(`.key[data-key="${keyCode}"]`);
+
+        return {
+          audio,
+          key
+        };
+      });
+
+      
+      progress.setAttribute('value', 0);
+      progress.setAttribute('max', elements.length);
+      elements.forEach( ({audio, key}, index) => {
+
+        reproductionTime += 100; 
+        setTimeout(() => {
+          audio.currentTime = 0;
+          progress.setAttribute('value', index === elements.length - 1 ? elements.length : index );
+          audio.play();
+          key.classList.add('playing');
+        }, reproductionTime);
+      });
+    });
+
+    // Record
+    document.querySelector('.controls button:nth-child(3)').addEventListener('click',function(e) {
+      recordingActive = !recordingActive;
+      record = [];
+      reproductionTime = 850;
+    });
+  });
 </script>
 
 
